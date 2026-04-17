@@ -1,0 +1,92 @@
+[
+  {
+    "name": "csrftoken",
+    "value": "1pS6otyBH6sOw6JAGV8zfq",
+    "domain": ".instagram.com",
+    "path": "/",
+    "expires": 1811001827.846871,
+    "httpOnly": false,
+    "secure": true,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "datr",
+    "value": "vjniaZeEU8yagj2FNwdY7nLY",
+    "domain": ".instagram.com",
+    "path": "/",
+    "expires": 1810993599.074406,
+    "httpOnly": true,
+    "secure": true,
+    "sameSite": "None"
+  },
+  {
+    "name": "ig_did",
+    "value": "985695A2-B43C-464F-8B89-52811CC65637",
+    "domain": ".instagram.com",
+    "path": "/",
+    "expires": 1807969599.074516,
+    "httpOnly": true,
+    "secure": true,
+    "sameSite": "None"
+  },
+  {
+    "name": "mid",
+    "value": "aeI5vgALAAFbKVJ4yN95RJei1t_u",
+    "domain": ".instagram.com",
+    "path": "/",
+    "expires": 1810993599.074598,
+    "httpOnly": true,
+    "secure": true,
+    "sameSite": "None"
+  },
+  {
+    "name": "ps_l",
+    "value": "1",
+    "domain": ".instagram.com",
+    "path": "/",
+    "expires": 1810993599.453372,
+    "httpOnly": true,
+    "secure": true,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "ps_n",
+    "value": "1",
+    "domain": ".instagram.com",
+    "path": "/",
+    "expires": 1810993599.453574,
+    "httpOnly": true,
+    "secure": true,
+    "sameSite": "None"
+  },
+  {
+    "name": "ds_user_id",
+    "value": "8781400881",
+    "domain": ".instagram.com",
+    "path": "/",
+    "expires": 1784209642.315105,
+    "httpOnly": false,
+    "secure": true,
+    "sameSite": "None"
+  },
+  {
+    "name": "rur",
+    "value": "\"CLN\\0548781400881\\0541807969642:01feaeb11fbfac8b3e98836c7c531ccc69430e500233541c5cbd2f5c08af0b51133bb3ab\"",
+    "domain": ".instagram.com",
+    "path": "/",
+    "expires": -1,
+    "httpOnly": true,
+    "secure": true,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "wd",
+    "value": "1366x768",
+    "domain": ".instagram.com",
+    "path": "/",
+    "expires": 1777046626,
+    "httpOnly": false,
+    "secure": true,
+    "sameSite": "Lax"
+  }
+]
