@@ -1,8 +1,7 @@
 /**
- * Instagram Login Server
+ * Instagram Login Server (серверде иштейт)
  *
- * CRM frontend'деги "Instagram'га кирүү" баскычы бул серверге кайрылат.
- * Playwright браузер терезеси ачылат → колдонуучу noVNC аркылуу кирет → cookie сакталат.
+ * CRM'ден username/password жөнөтүлөт → Playwright Instagram сайтына кирет → cookie сакталат.
  */
 
 const http = require('http');
@@ -53,7 +52,7 @@ let activeSessions = new Set();
 const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
@@ -63,7 +62,7 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'GET' && req.url === '/status') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ ok: true, activeSessions: activeSessions.size }));
+    res.end(JSON.stringify({ ok: true }));
     return;
   }
 
@@ -72,75 +71,95 @@ const server = http.createServer(async (req, res) => {
     req.on('data', (chunk) => body += chunk);
     req.on('end', async () => {
       try {
-        const { parserId, login } = JSON.parse(body);
+        const { parserId, login, password } = JSON.parse(body);
 
-        if (!parserId || !login) {
+        if (!parserId || !login || !password) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'parserId жана login керек' }));
+          res.end(JSON.stringify({ error: 'parserId, login жана password керек' }));
           return;
         }
 
         if (activeSessions.has(parserId)) {
           res.writeHead(409, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Бул аккаунт үчүн браузер ачык турат' }));
+          res.end(JSON.stringify({ error: 'Бул аккаунт үчүн логин процесси жүрүп жатат' }));
           return;
         }
 
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'Браузер ачылып жатат... noVNC терезесинен кириңиз.' }));
-
         activeSessions.add(parserId);
-        console.log(`\n[Login] @${login} үчүн браузер ачылып жатат...`);
+        console.log(`\n[Login] @${login} Instagram сайтына кирүү башталды...`);
 
         let browser;
         try {
           browser = await chromium.launch({
-            headless: false,
+            headless: true,
             executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--start-maximized'],
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
           });
 
           const context = await browser.newContext({
-            viewport: { width: 1260, height: 700 },
+            viewport: { width: 1280, height: 720 },
             userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
           });
 
           const page = await context.newPage();
-          await page.goto('https://www.instagram.com/accounts/login/');
+          await page.goto('https://www.instagram.com/accounts/login/', { waitUntil: 'networkidle', timeout: 30000 });
 
-          console.log(`[Login] Instagram ачылды. Кирүүнү күтүп жатат... (5 мүнөт)`);
+          // Instagram login формасын толтуруу
+          await page.waitForSelector('input[name="username"]', { timeout: 15000 });
+          await page.fill('input[name="username"]', login);
+          await page.fill('input[name="password"]', password);
+          await page.click('button[type="submit"]');
 
-          const deadline = Date.now() + 300000;
+          console.log(`[Login] @${login} форма жөнөтүлдү, sessionid күтүлүүдө...`);
+
+          // sessionid cookie пайда болгонду күтүү
+          const deadline = Date.now() + 30000; // 30 секунд
           let found = false;
           while (Date.now() < deadline) {
             const cookies = await context.cookies('https://www.instagram.com');
             const session = cookies.find(c => c.name === 'sessionid');
             if (session) {
               found = true;
-              console.log('[Login] sessionid cookie табылды!');
               break;
             }
-            await new Promise(r => setTimeout(r, 2000));
+            await new Promise(r => setTimeout(r, 1000));
           }
-          if (!found) throw new Error('Убактысы бүттү — sessionid табылган жок');
+
+          if (!found) {
+            // Ката билдирүүсүн текшерүү
+            const errorText = await page.evaluate(() => {
+              const el = document.querySelector('#slfErrorAlert, [data-testid="login-error-message"], p[role="alert"]');
+              return el ? el.textContent : null;
+            }).catch(() => null);
+
+            await browser.close();
+            activeSessions.delete(parserId);
+
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: errorText || 'Instagram\'га кирүү ишке ашкан жок. Логин/паролду текшериңиз.' }));
+            return;
+          }
 
           await new Promise(r => setTimeout(r, 2000));
 
           const cookies = await context.cookies('https://www.instagram.com');
-          const sessionCookie = cookies.find(c => c.name === 'sessionid');
-
-          if (sessionCookie) {
-            await saveCookies(parserId, cookies);
-            await updateStatus(parserId, 'idle');
-            console.log(`[Login] @${login} cookie сакталды! (${cookies.length} cookie)`);
-          }
+          await saveCookies(parserId, cookies);
+          await updateStatus(parserId, 'idle');
+          console.log(`[Login] @${login} cookie сакталды! (${cookies.length} cookie)`);
 
           await browser.close();
+          activeSessions.delete(parserId);
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ message: `@${login} Instagram\'га ийгиликтүү кирди! Cookie сакталды.` }));
+
         } catch (err) {
           console.error(`[Login] @${login} ката:`, err.message);
           if (browser) await browser.close().catch(() => {});
-        } finally {
           activeSessions.delete(parserId);
+
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: `Ката: ${err.message}` }));
         }
 
       } catch (e) {
@@ -159,5 +178,5 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`\nInstagram Login Server: http://localhost:${PORT}`);
-  console.log('noVNC: http://localhost:6080/vnc.html');
+  console.log(`Backend: ${BACKEND_URL}\n`);
 });
