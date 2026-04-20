@@ -102,7 +102,7 @@ const server = http.createServer(async (req, res) => {
           });
 
           const page = await context.newPage();
-          await page.goto('https://www.instagram.com/accounts/login/', { waitUntil: 'networkidle', timeout: 30000 });
+          await page.goto('https://www.instagram.com/accounts/login/', { waitUntil: 'domcontentloaded', timeout: 60000 });
 
           // Instagram login формасын толтуруу
           await page.waitForSelector('input[name="username"]', { timeout: 15000 });
