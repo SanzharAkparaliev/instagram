@@ -13,8 +13,7 @@ export default function AccountsPage() {
   const [cookieModal, setCookieModal] = useState(null);
   const [cookieText, setCookieText] = useState('');
   const [loginLoading, setLoginLoading] = useState(null);
-  const [loginModal, setLoginModal] = useState(null);
-  const [loginPassword, setLoginPassword] = useState('');
+  const [vncModal, setVncModal] = useState(false);
 
   const fetchAll = async () => {
     const [t, p] = await Promise.all([
@@ -57,15 +56,13 @@ export default function AccountsPage() {
       const res = await fetch('/login-server/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ parserId, login, password: loginPassword }),
+        body: JSON.stringify({ parserId, login }),
       });
       const data = await res.json();
       if (!res.ok) {
         alert(data.error || 'Ката');
       } else {
-        alert('Instagram\'га кирүү башталды. Cookie автоматтык сакталат.');
-        setLoginModal(null);
-        setLoginPassword('');
+        setVncModal(true);
       }
     } catch {
       alert('Login сервер иштебей жатат');
@@ -191,10 +188,10 @@ export default function AccountsPage() {
                       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                         <button
                           className="btn btn-primary btn-sm"
-                          onClick={() => { setLoginModal(p); setLoginPassword(''); }}
+                          onClick={() => handleInstagramLogin(p.id, p.login)}
                           disabled={loginLoading === p.id}
                         >
-                          {loginLoading === p.id ? 'Кирүүдө...' : 'Войти'}
+                          {loginLoading === p.id ? 'Ачылууда...' : 'Войти'}
                         </button>
                         <button className="btn btn-ghost btn-sm" onClick={() => { setCookieModal(p.id); setCookieText(''); }}>
                           Cookie
@@ -238,29 +235,19 @@ export default function AccountsPage() {
           </form>
         </Modal>
       )}
-      {/* Login Modal */}
-      {loginModal && (
-        <Modal title={`Instagram кирүү: @${loginModal.login}`} onClose={() => { setLoginModal(null); setLoginPassword(''); }}>
-          <div className="form-group">
-            <label className="form-label">Instagram пароль</label>
-            <input
-              type="password"
-              placeholder="Паролду жазыңыз"
-              value={loginPassword}
-              onChange={e => setLoginPassword(e.target.value)}
-              autoFocus
-            />
-          </div>
-          <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-            <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => { setLoginModal(null); setLoginPassword(''); }}>Отмена</button>
-            <button
-              className="btn btn-primary"
-              style={{ flex: 1 }}
-              disabled={!loginPassword || loginLoading}
-              onClick={() => handleInstagramLogin(loginModal.id, loginModal.login)}
-            >
-              {loginLoading ? 'Кирүүдө...' : 'Кирүү'}
-            </button>
+      {/* VNC Modal */}
+      {vncModal && (
+        <Modal title="Instagram Login" onClose={() => setVncModal(false)}>
+          <p style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 12 }}>
+            Instagram сайтына кириңиз. Кирген соң cookie автоматтык сакталат.
+          </p>
+          <iframe
+            src="/vnc/vnc.html?autoconnect=true&resize=scale"
+            style={{ width: '100%', height: 500, border: '1px solid var(--border)', borderRadius: 8 }}
+            title="Instagram Browser"
+          />
+          <div style={{ marginTop: 12, textAlign: 'right' }}>
+            <button className="btn btn-ghost" onClick={() => setVncModal(false)}>Жабуу</button>
           </div>
         </Modal>
       )}
