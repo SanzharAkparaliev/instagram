@@ -1,4 +1,5 @@
 const { TargetAccount, ParserAccount } = require('../models/account.model');
+const fetch = require('node-fetch');
 
 // ===== TARGET ACCOUNTS =====
 const getTargets = async (req, res) => {
@@ -112,8 +113,108 @@ const getParserWithCookies = async (req, res) => {
   }
 };
 
+// Instagram login via HTTP
+const instagramLogin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { password } = req.body;
+
+    const account = await ParserAccount.findByPk(id);
+    if (!account) return res.status(404).json({ error: 'Аккаунт табылган жок' });
+    if (!password) return res.status(400).json({ error: 'Пароль керек' });
+
+    const username = account.login;
+
+    // 1. Instagram'дан csrftoken алуу
+    const initRes = await fetch('https://www.instagram.com/accounts/login/', {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+      },
+    });
+
+    const initSetCookies = initRes.headers.raw()['set-cookie'] || [];
+    let csrftoken = '';
+    let mid = '';
+    const initCookieParts = [];
+
+    initSetCookies.forEach(c => {
+      const m1 = c.match(/csrftoken=([^;]+)/);
+      const m2 = c.match(/mid=([^;]+)/);
+      if (m1) csrftoken = m1[1];
+      if (m2) mid = m2[1];
+      const nameVal = c.split(';')[0];
+      initCookieParts.push(nameVal);
+    });
+
+    if (!csrftoken) return res.status(500).json({ error: 'Instagram\'га туташуу ишке ашкан жок' });
+
+    // 2. Login сурам
+    const cookieHeader = `csrftoken=${csrftoken}; mid=${mid}`;
+    const ts = Math.floor(Date.now() / 1000);
+
+    const loginRes = await fetch('https://www.instagram.com/accounts/login/ajax/', {
+      method: 'POST',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'X-CSRFToken': csrftoken,
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-Instagram-AJAX': '1',
+        'Referer': 'https://www.instagram.com/accounts/login/',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Cookie': cookieHeader,
+      },
+      body: `username=${encodeURIComponent(username)}&enc_password=#PWD_INSTAGRAM_BROWSER:0:${ts}:${password}&queryParams={}&optIntoOneTap=false`,
+    });
+
+    const loginData = await loginRes.json();
+
+    if (!loginData.authenticated) {
+      return res.status(401).json({ error: loginData.message || 'Логин же пароль туура эмес' });
+    }
+
+    // 3. Cookie'лерди алуу
+    const loginSetCookies = loginRes.headers.raw()['set-cookie'] || [];
+    const cookies = [];
+
+    [...initSetCookies, ...loginSetCookies].forEach(cookieStr => {
+      const mainPart = cookieStr.split(';')[0];
+      const eqIdx = mainPart.indexOf('=');
+      if (eqIdx === -1) return;
+      const name = mainPart.substring(0, eqIdx).trim();
+      const value = mainPart.substring(eqIdx + 1).trim();
+      if (!name || !value || value === '""') return;
+
+      const existing = cookies.findIndex(c => c.name === name);
+      const cookie = {
+        name,
+        value,
+        domain: '.instagram.com',
+        path: '/',
+        secure: true,
+        httpOnly: ['sessionid', 'mid', 'ig_did'].includes(name),
+      };
+      if (existing >= 0) cookies[existing] = cookie;
+      else cookies.push(cookie);
+    });
+
+    const sessionid = cookies.find(c => c.name === 'sessionid');
+    if (!sessionid) return res.status(500).json({ error: 'Cookie алуу ишке ашкан жок' });
+
+    // 4. Cookie сактоо
+    await account.update({
+      cookies: JSON.stringify(cookies),
+      status: 'idle',
+    });
+
+    res.json({ message: `@${username} Instagram'га ийгиликтүү кирди!` });
+  } catch (err) {
+    console.error('Instagram login error:', err);
+    res.status(500).json({ error: 'Instagram\'га кирүүдө ката: ' + err.message });
+  }
+};
+
 module.exports = {
   getTargets, createTarget, toggleTarget, deleteTarget,
   getParsers, createParser, deleteParser, updateParserStatus,
-  uploadCookies, getParserWithCookies,
+  uploadCookies, getParserWithCookies, instagramLogin,
 };

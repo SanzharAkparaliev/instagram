@@ -33,6 +33,7 @@ router.get('/accounts/parsers', authMiddleware, requireRole('admin'), accountsCt
 router.post('/accounts/parsers', authMiddleware, requireRole('admin'), accountsCtrl.createParser);
 router.delete('/accounts/parsers/:id', authMiddleware, requireRole('admin'), accountsCtrl.deleteParser);
 router.post('/accounts/parsers/:id/cookies', authMiddleware, requireRole('admin'), accountsCtrl.uploadCookies);
+router.post('/accounts/parsers/:id/instagram-login', authMiddleware, requireRole('admin'), accountsCtrl.instagramLogin);
 
 // Settings (admin only)
 router.get('/settings', authMiddleware, requireRole('admin'), settingsCtrl.getSettings);
