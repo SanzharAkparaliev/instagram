@@ -33,7 +33,7 @@ services:
       JWT_SECRET: change_this_secret_in_production
       JWT_EXPIRES_IN: 7d
       NODE_ENV: production
-      FRONTEND_URL: http://localhost:5173
+      FRONTEND_URL: http://147.45.219.116
       PARSER_SECRET: parser_internal_secret
     depends_on:
       postgres:
@@ -50,6 +50,15 @@ services:
       - backend
     volumes:
       - ./data:/app/data
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: crm_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
     restart: unless-stopped
 
 volumes:
