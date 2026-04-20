@@ -13,7 +13,6 @@ export default function AccountsPage() {
   const [cookieModal, setCookieModal] = useState(null);
   const [cookieText, setCookieText] = useState('');
   const [loginLoading, setLoginLoading] = useState(null);
-  const [vncModal, setVncModal] = useState(false);
 
   const fetchAll = async () => {
     const [t, p] = await Promise.all([
@@ -53,7 +52,7 @@ export default function AccountsPage() {
   const handleInstagramLogin = async (parserId, login) => {
     setLoginLoading(parserId);
     try {
-      const res = await fetch('/login-server/login', {
+      const res = await fetch('http://localhost:3100/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ parserId, login }),
@@ -62,10 +61,10 @@ export default function AccountsPage() {
       if (!res.ok) {
         alert(data.error || 'Ката');
       } else {
-        setVncModal(true);
+        alert('Браузер ачылды! Instagram\'га кириңиз. Cookie автоматтык сакталат.');
       }
     } catch {
-      alert('Login сервер иштебей жатат');
+      alert('Login сервер иштебей жатат.\n\nКомпьютериңизде запуск кылыңыз: node login-server.js');
     } finally {
       setLoginLoading(null);
     }
@@ -233,22 +232,6 @@ export default function AccountsPage() {
               </button>
             </div>
           </form>
-        </Modal>
-      )}
-      {/* VNC Modal */}
-      {vncModal && (
-        <Modal title="Instagram Login" onClose={() => setVncModal(false)}>
-          <p style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 12 }}>
-            Instagram сайтына кириңиз. Кирген соң cookie автоматтык сакталат.
-          </p>
-          <iframe
-            src="/vnc/vnc.html?autoconnect=true&resize=scale"
-            style={{ width: '100%', height: 500, border: '1px solid var(--border)', borderRadius: 8 }}
-            title="Instagram Browser"
-          />
-          <div style={{ marginTop: 12, textAlign: 'right' }}>
-            <button className="btn btn-ghost" onClick={() => setVncModal(false)}>Жабуу</button>
-          </div>
         </Modal>
       )}
       {/* Cookie Modal */}

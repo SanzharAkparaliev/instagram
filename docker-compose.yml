@@ -52,16 +52,6 @@ services:
       - ./data:/app/data
     restart: unless-stopped
 
-  login-server:
-    build: ./login-server
-    container_name: crm_login
-    environment:
-      BACKEND_URL: http://backend:5000
-      PARSER_SECRET: parser_internal_secret
-    depends_on:
-      - backend
-    restart: unless-stopped
-
   frontend:
     build: ./frontend
     container_name: crm_frontend
@@ -69,7 +59,6 @@ services:
       - "80:80"
     depends_on:
       - backend
-      - login-server
     restart: unless-stopped
 
 volumes:
