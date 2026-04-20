@@ -60,6 +60,10 @@ services:
       PARSER_SECRET: parser_internal_secret
     depends_on:
       - backend
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    shm_size: '256m'
     restart: unless-stopped
 
   frontend:

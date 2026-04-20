@@ -4,6 +4,7 @@ RUN apt-get update && apt-get install -y \
     chromium \
     fonts-liberation \
     fonts-noto-color-emoji \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
