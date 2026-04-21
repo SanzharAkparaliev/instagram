@@ -95,7 +95,12 @@ const uploadCookies = async (req, res) => {
     if (!account) return res.status(404).json({ error: 'Табылган жок' });
     const { cookies } = req.body;
     if (!cookies) return res.status(400).json({ error: 'Cookies керек' });
-    await account.update({ cookies: typeof cookies === 'string' ? cookies : JSON.stringify(cookies) });
+    const parsed = typeof cookies === 'string' ? JSON.parse(cookies) : cookies;
+    const fixed = parsed.map(c => ({
+      ...c,
+      sameSite: c.sameSite === 'strict' ? 'Strict' : c.sameSite === 'lax' ? 'Lax' : c.sameSite === 'no_restriction' || !c.sameSite ? 'None' : c.sameSite,
+    }));
+    await account.update({ cookies: JSON.stringify(fixed) });
     res.json({ message: 'Cookie сакталды' });
   } catch (error) {
     res.status(500).json({ error: 'Cookie сактоодо ката' });
@@ -206,6 +211,7 @@ const instagramLogin = async (req, res) => {
         path: '/',
         secure: true,
         httpOnly: ['sessionid', 'mid', 'ig_did'].includes(name),
+        sameSite: 'None',
       };
       if (existing >= 0) cookies[existing] = cookie;
       else cookies.push(cookie);
