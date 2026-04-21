@@ -65,7 +65,7 @@ async function saveCookies(context, login) {
 }
 
 async function loginToInstagram(page, login, password) {
-  await page.goto('https://www.instagram.com/accounts/login/', { waitUntil: 'networkidle' });
+  await page.goto('https://www.instagram.com/accounts/login/', { waitUntil: 'domcontentloaded', timeout: 60000 });
 
   // Cookie banner
   try {

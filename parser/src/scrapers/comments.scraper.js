@@ -10,8 +10,8 @@ async function scrapeRecentPosts(page, targetUsername, maxPosts = 6) {
 
   // 1. Негизги профил барагы (посттор)
   await page.goto(`https://www.instagram.com/${targetUsername}/`, {
-    waitUntil: 'networkidle',
-    timeout: 30000,
+    waitUntil: 'domcontentloaded',
+    timeout: 60000,
   });
   await randomDelay(1500, 3000);
 

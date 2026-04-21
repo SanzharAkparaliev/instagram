@@ -32,7 +32,7 @@ async function parseWithAccount(parser, targets, settings = {}) {
     if (dbCookies) {
       const cookiesArray = Array.isArray(dbCookies) ? dbCookies : JSON.parse(dbCookies);
       await context.addCookies(cookiesArray);
-      await page.goto('https://www.instagram.com/', { waitUntil: 'networkidle', timeout: 30000 });
+      await page.goto('https://www.instagram.com/', { waitUntil: 'domcontentloaded', timeout: 60000 });
       await randomDelay(3000, 5000);
 
       const url = page.url();
