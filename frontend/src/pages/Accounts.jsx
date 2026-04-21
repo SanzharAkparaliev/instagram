@@ -13,6 +13,10 @@ export default function AccountsPage() {
   const [cookieModal, setCookieModal] = useState(null);
   const [cookieText, setCookieText] = useState('');
   const [loginLoading, setLoginLoading] = useState(null);
+  const [loginModal, setLoginModal] = useState(null);
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginCookieText, setLoginCookieText] = useState('');
+  const [loginTab, setLoginTab] = useState('password');
 
   const fetchAll = async () => {
     const [t, p] = await Promise.all([
@@ -49,12 +53,36 @@ export default function AccountsPage() {
     await fetchAll();
   };
 
-  const handleInstagramLogin = (parserId) => {
-    // Extension окуу үчүн parserId сактоо
-    localStorage.setItem('crm_parserId', String(parserId));
-    // Instagram login барагын жаңы табда ачуу
-    window.open('https://www.instagram.com/accounts/login/', '_blank');
-    alert('Instagram ачылды! Ал жактан кириңиз — cookie автоматтык сакталат.');
+  const handleInstagramLogin = async () => {
+    if (!loginModal || !loginPassword) return;
+    setLoginLoading(loginModal.id);
+    try {
+      const res = await api.post(`/accounts/parsers/${loginModal.id}/instagram-login`, { password: loginPassword });
+      alert(res.data.message || 'Ийгиликтүү!');
+      setLoginModal(null);
+      setLoginPassword('');
+      setLoginCookieText('');
+      await fetchAll();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Ката болду');
+    } finally {
+      setLoginLoading(null);
+    }
+  };
+
+  const handleLoginCookieUpload = async () => {
+    if (!loginModal) return;
+    try {
+      const cookies = JSON.parse(loginCookieText);
+      await api.post(`/accounts/parsers/${loginModal.id}/cookies`, { cookies });
+      alert('Cookie сакталды!');
+      setLoginModal(null);
+      setLoginPassword('');
+      setLoginCookieText('');
+      await fetchAll();
+    } catch (err) {
+      alert(err.message?.includes('JSON') ? 'Неверный формат JSON' : (err.response?.data?.error || 'Ката'));
+    }
   };
 
   const handleCookieUpload = async () => {
@@ -174,7 +202,7 @@ export default function AccountsPage() {
                       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                         <button
                           className="btn btn-primary btn-sm"
-                          onClick={() => handleInstagramLogin(p.id)}
+                          onClick={() => { setLoginModal(p); setLoginPassword(''); setLoginCookieText(''); setLoginTab('password'); }}
                         >
                           Войти
                         </button>
@@ -218,6 +246,63 @@ export default function AccountsPage() {
               </button>
             </div>
           </form>
+        </Modal>
+      )}
+      {/* Login Modal */}
+      {loginModal && (
+        <Modal title={`Instagram кирүү: @${loginModal.login}`} onClose={() => { setLoginModal(null); setLoginPassword(''); setLoginCookieText(''); }}>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+            <button className={`btn ${loginTab === 'password' ? 'btn-primary' : 'btn-ghost'} btn-sm`} onClick={() => setLoginTab('password')}>
+              Пароль менен
+            </button>
+            <button className={`btn ${loginTab === 'cookie' ? 'btn-primary' : 'btn-ghost'} btn-sm`} onClick={() => setLoginTab('cookie')}>
+              Cookie менен
+            </button>
+          </div>
+
+          {loginTab === 'password' ? (
+            <>
+              <div className="form-group">
+                <label className="form-label">Instagram пароль</label>
+                <input
+                  type="password"
+                  placeholder="Паролду жазыңыз"
+                  value={loginPassword}
+                  onChange={e => setLoginPassword(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && loginPassword && handleInstagramLogin()}
+                  autoFocus
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+                <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setLoginModal(null)}>Отмена</button>
+                <button className="btn btn-primary" style={{ flex: 1 }} disabled={!loginPassword || loginLoading} onClick={handleInstagramLogin}>
+                  {loginLoading ? 'Кирүүдө...' : 'Кирүү'}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ marginBottom: 12, fontSize: 13, color: 'var(--text2)', lineHeight: 1.6 }}>
+                <ol style={{ paddingLeft: 18, margin: 0 }}>
+                  <li><a href="https://www.instagram.com/accounts/login/" target="_blank" rel="noreferrer" style={{ color: 'var(--blue)' }}>Instagram'га кириңиз</a></li>
+                  <li>Cookie-Editor расширениесин ачыңыз</li>
+                  <li><strong>Export → JSON</strong> басыңыз</li>
+                  <li>Бул жерге чаптаңыз</li>
+                </ol>
+              </div>
+              <textarea
+                rows={8}
+                placeholder='[{"name":"sessionid","value":"...","domain":".instagram.com",...}]'
+                value={loginCookieText}
+                onChange={e => setLoginCookieText(e.target.value)}
+                style={{ width: '100%', fontFamily: 'var(--mono)', fontSize: 11, resize: 'vertical' }}
+              />
+              <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+                <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setLoginModal(null)}>Отмена</button>
+                <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleLoginCookieUpload} disabled={!loginCookieText.trim()}>Сактоо</button>
+              </div>
+            </>
+          )}
         </Modal>
       )}
       {/* Cookie Modal */}
