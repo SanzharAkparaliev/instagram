@@ -1,5 +1,4 @@
 const { TargetAccount, ParserAccount } = require('../models/account.model');
-const fetch = require('node-fetch');
 
 // ===== TARGET ACCOUNTS =====
 const getTargets = async (req, res) => {
@@ -132,7 +131,7 @@ const instagramLogin = async (req, res) => {
       },
     });
 
-    const initSetCookies = initRes.headers.raw()['set-cookie'] || [];
+    const initSetCookies = initRes.headers.getSetCookie() || [];
     let csrftoken = '';
     let mid = '';
     const initCookieParts = [];
@@ -173,7 +172,7 @@ const instagramLogin = async (req, res) => {
     }
 
     // 3. Cookie'лерди алуу
-    const loginSetCookies = loginRes.headers.raw()['set-cookie'] || [];
+    const loginSetCookies = loginRes.headers.getSetCookie() || [];
     const cookies = [];
 
     [...initSetCookies, ...loginSetCookies].forEach(cookieStr => {
