@@ -18,8 +18,9 @@ async function launchBrowser(proxy = null) {
     '--disable-setuid-sandbox',
     '--disable-dev-shm-usage',
     '--disable-gpu',
-    '--dns-prefetch-disable',
-    '--single-process',
+    '--disable-software-rasterizer',
+    '--disable-extensions',
+    '--no-zygote',
   ];
 
   const launchOptions = {
