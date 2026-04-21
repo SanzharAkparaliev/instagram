@@ -13,7 +13,14 @@ function getCookiePath(login) {
 }
 
 async function launchBrowser(proxy = null) {
-  const args = ['--no-sandbox', '--disable-setuid-sandbox'];
+  const args = [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-gpu',
+    '--dns-prefetch-disable',
+    '--single-process',
+  ];
 
   const launchOptions = {
     headless: true,

@@ -43,6 +43,10 @@ services:
   parser:
     build: ./parser
     container_name: crm_parser
+    shm_size: '256m'
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     environment:
       BACKEND_URL: http://backend:5000/api
       PARSER_SECRET: parser_internal_secret
