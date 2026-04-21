@@ -126,8 +126,11 @@ const instagramLogin = async (req, res) => {
 
     // 1. Instagram'дан csrftoken алуу
     const initRes = await fetch('https://www.instagram.com/accounts/login/', {
+      redirect: 'manual',
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
       },
     });
 
@@ -136,6 +139,7 @@ const instagramLogin = async (req, res) => {
     let mid = '';
     const initCookieParts = [];
 
+    // Set-Cookie header'лерден csrftoken алуу
     initSetCookies.forEach(c => {
       const m1 = c.match(/csrftoken=([^;]+)/);
       const m2 = c.match(/mid=([^;]+)/);
@@ -145,7 +149,17 @@ const instagramLogin = async (req, res) => {
       initCookieParts.push(nameVal);
     });
 
-    if (!csrftoken) return res.status(500).json({ error: 'Instagram\'га туташуу ишке ашкан жок' });
+    // Эгер cookie'лерден табылбаса, HTML'ден csrftoken издөө
+    if (!csrftoken) {
+      const html = await initRes.text();
+      const csrfMatch = html.match(/"csrf_token":"([^"]+)"/);
+      if (csrfMatch) csrftoken = csrfMatch[1];
+    }
+
+    if (!csrftoken) {
+      console.error('Instagram init response:', initRes.status, 'set-cookie count:', initSetCookies.length);
+      return res.status(500).json({ error: 'Instagram\'га туташуу ишке ашкан жок' });
+    }
 
     // 2. Login сурам
     const cookieHeader = `csrftoken=${csrftoken}; mid=${mid}`;
@@ -153,6 +167,7 @@ const instagramLogin = async (req, res) => {
 
     const loginRes = await fetch('https://www.instagram.com/accounts/login/ajax/', {
       method: 'POST',
+      redirect: 'manual',
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
         'X-CSRFToken': csrftoken,
